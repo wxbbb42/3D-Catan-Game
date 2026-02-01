@@ -1,9 +1,9 @@
 'use client'
 
-import { useRef, useState, useMemo } from 'react'
+import { useRef, useState } from 'react'
 import { useFrame, ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
-import { ROAD_WIDTH, ROAD_HEIGHT } from '@catan/shared'
+import { Road } from '../Buildings'
 
 interface EdgeMarkerProps {
   edgeId: string
@@ -28,26 +28,6 @@ export function EdgeMarker({
 }: EdgeMarkerProps) {
   const groupRef = useRef<THREE.Group>(null)
   const [localHover, setLocalHover] = useState(false)
-
-  // Calculate position and rotation - position in the gap between tiles
-  const { position, rotation, length } = useMemo(() => {
-    const startVec = new THREE.Vector3(...start)
-    const endVec = new THREE.Vector3(...end)
-
-    const midpoint = new THREE.Vector3().addVectors(startVec, endVec).multiplyScalar(0.5)
-    const direction = new THREE.Vector3().subVectors(endVec, startVec)
-    const len = direction.length()
-    direction.normalize()
-
-    const angle = Math.atan2(direction.x, direction.z)
-
-    return {
-      // Position directly at midpoint - already at correct Y from InteractiveMarkers
-      position: [midpoint.x, midpoint.y + ROAD_HEIGHT / 2, midpoint.z] as [number, number, number],
-      rotation: [0, -angle, 0] as [number, number, number],
-      length: len,
-    }
-  }, [start, end])
 
   // Subtle pulse animation
   useFrame((state) => {
@@ -79,42 +59,25 @@ export function EdgeMarker({
     }
   }
 
-  const getColor = () => {
-    if (!isAvailable) return '#888888'
-    if (isSelected) return '#4AE88C'
-    if (isHovered || localHover) return '#7DD3A8'
-    return '#B8D8B8'
-  }
-
-  const getOpacity = () => {
-    if (!isAvailable) return 0.15
-    if (isSelected || isHovered || localHover) return 0.85
-    return 0.5
-  }
-
-  // Road marker matches actual road dimensions
-  const roadLength = length * 0.75
+  // Calculate opacity based on state
+  const showHighlight = isHovered || localHover || isSelected
+  const opacity = isAvailable ? (showHighlight ? 0.8 : 0.4) : 0.15
 
   return (
     <group
       ref={groupRef}
-      position={position}
-      rotation={rotation}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onClick={handleClick}
     >
-      <mesh>
-        <boxGeometry args={[ROAD_WIDTH, ROAD_HEIGHT, roadLength]} />
-        <meshStandardMaterial
-          color={getColor()}
-          transparent
-          opacity={getOpacity()}
-          emissive={isHovered || localHover ? getColor() : '#000000'}
-          emissiveIntensity={isHovered || localHover ? 0.3 : 0}
-          roughness={0.6}
-        />
-      </mesh>
+      {/* Use the actual Road model as marker */}
+      <Road
+        start={start}
+        end={end}
+        color="white"
+        isPreview={true}
+        opacity={opacity}
+      />
     </group>
   )
 }

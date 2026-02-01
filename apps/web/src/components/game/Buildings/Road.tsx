@@ -24,11 +24,14 @@ interface RoadProps {
   end: [number, number, number]
   color: PlayerColor
   isPreview?: boolean
+  opacity?: number
 }
 
-export function Road({ start, end, color, isPreview = false }: RoadProps) {
+export function Road({ start, end, color, isPreview = false, opacity }: RoadProps) {
   const mainColor = PLAYER_COLORS[color]
   const darkColor = PLAYER_COLORS_DARK[color]
+  const actualOpacity = opacity ?? (isPreview ? 0.6 : 1)
+  const isTransparent = actualOpacity < 1
 
   // Calculate road position and rotation
   const { position, rotation, length } = useMemo(() => {
@@ -48,7 +51,7 @@ export function Road({ start, end, color, isPreview = false }: RoadProps) {
 
     return {
       position: [midpoint.x, midpoint.y, midpoint.z] as [number, number, number],
-      rotation: [0, -angle, 0] as [number, number, number],
+      rotation: [0, angle, 0] as [number, number, number],
       length: len,
     }
   }, [start, end])
@@ -65,8 +68,8 @@ export function Road({ start, end, color, isPreview = false }: RoadProps) {
           color={mainColor}
           roughness={0.7}
           metalness={0.05}
-          transparent={isPreview}
-          opacity={isPreview ? 0.6 : 1}
+          transparent={isTransparent}
+          opacity={actualOpacity}
         />
       </mesh>
 
@@ -76,8 +79,8 @@ export function Road({ start, end, color, isPreview = false }: RoadProps) {
         <meshStandardMaterial
           color={darkColor}
           roughness={0.6}
-          transparent={isPreview}
-          opacity={isPreview ? 0.6 : 1}
+          transparent={isTransparent}
+          opacity={actualOpacity}
         />
       </mesh>
 
@@ -87,8 +90,8 @@ export function Road({ start, end, color, isPreview = false }: RoadProps) {
         <meshStandardMaterial
           color={darkColor}
           roughness={0.8}
-          transparent={isPreview}
-          opacity={isPreview ? 0.6 : 1}
+          transparent={isTransparent}
+          opacity={actualOpacity}
         />
       </mesh>
       <mesh castShadow position={[0, ROAD_HEIGHT / 2, -roadLength / 2]}>
@@ -96,8 +99,8 @@ export function Road({ start, end, color, isPreview = false }: RoadProps) {
         <meshStandardMaterial
           color={darkColor}
           roughness={0.8}
-          transparent={isPreview}
-          opacity={isPreview ? 0.6 : 1}
+          transparent={isTransparent}
+          opacity={actualOpacity}
         />
       </mesh>
     </group>

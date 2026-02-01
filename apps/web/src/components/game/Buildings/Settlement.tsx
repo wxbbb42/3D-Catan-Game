@@ -1,32 +1,52 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { PlayerColor } from '@catan/shared'
 
 // Brighter, more saturated player colors for better visibility
 const PLAYER_COLORS: Record<PlayerColor, string> = {
-  red: '#D35F5F',
-  blue: '#5F8FD3',
-  orange: '#D3955F',
-  white: '#E8E8E0',
+  red: '#E25555',
+  blue: '#4A7FD0',
+  orange: '#E89540',
+  white: '#F0F0E8',
 }
 
 const PLAYER_COLORS_DARK: Record<PlayerColor, string> = {
-  red: '#A34545',
-  blue: '#456FA3',
-  orange: '#A37545',
-  white: '#C8C8C0',
+  red: '#B54040',
+  blue: '#3A5FA0',
+  orange: '#B87530',
+  white: '#D0D0C8',
 }
 
 interface SettlementProps {
   position: [number, number, number]
   color: PlayerColor
   isPreview?: boolean
+  opacity?: number
 }
 
-export function Settlement({ position, color, isPreview = false }: SettlementProps) {
+// Create triangular prism geometry for the roof
+function createRoofGeometry(): THREE.BufferGeometry {
+  const shape = new THREE.Shape()
+  // Triangle cross-section
+  shape.moveTo(-0.14, 0)
+  shape.lineTo(0.14, 0)
+  shape.lineTo(0, 0.12)
+  shape.closePath()
+
+  const extrudeSettings = {
+    depth: 0.22,
+    bevelEnabled: false,
+  }
+
+  const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings)
+  geometry.translate(0, 0, -0.11) // Center it
+  return geometry
+}
+
+export function Settlement({ position, color, isPreview = false, opacity }: SettlementProps) {
   const groupRef = useRef<THREE.Group>(null)
 
   // Subtle floating animation for preview
@@ -37,54 +57,40 @@ export function Settlement({ position, color, isPreview = false }: SettlementPro
   })
 
   const mainColor = PLAYER_COLORS[color]
-  const roofColor = PLAYER_COLORS_DARK[color]
+  const darkColor = PLAYER_COLORS_DARK[color]
+  const actualOpacity = opacity ?? (isPreview ? 0.7 : 1)
+  const isTransparent = actualOpacity < 1
 
-  // Settlement sits at vertex slot - position is already at the gap level
+  const roofGeometry = useMemo(() => createRoofGeometry(), [])
+
+  // Simple house like the classic Catan settlement piece
   return (
     <group ref={groupRef} position={position}>
-      {/* Base platform - sits in the vertex gap */}
-      <mesh castShadow receiveShadow position={[0, 0.02, 0]}>
-        <cylinderGeometry args={[0.14, 0.16, 0.04, 6]} />
-        <meshStandardMaterial
-          color={roofColor}
-          roughness={0.8}
-          transparent={isPreview}
-          opacity={isPreview ? 0.7 : 1}
-        />
-      </mesh>
-
-      {/* House base - slightly raised */}
-      <mesh castShadow receiveShadow position={[0, 0.14, 0]}>
-        <boxGeometry args={[0.22, 0.18, 0.22]} />
+      {/* House base - rectangular box */}
+      <mesh castShadow receiveShadow position={[0, 0.08, 0]}>
+        <boxGeometry args={[0.24, 0.16, 0.20]} />
         <meshStandardMaterial
           color={mainColor}
-          roughness={0.6}
+          roughness={0.5}
           metalness={0.1}
-          transparent={isPreview}
-          opacity={isPreview ? 0.7 : 1}
+          transparent={isTransparent}
+          opacity={actualOpacity}
         />
       </mesh>
 
-      {/* Roof - pyramid style like classic Catan pieces */}
-      <mesh position={[0, 0.30, 0]} castShadow rotation={[0, Math.PI / 4, 0]}>
-        <coneGeometry args={[0.18, 0.16, 4]} />
+      {/* Triangular roof - like the reference image */}
+      <mesh 
+        position={[0, 0.16, 0]} 
+        rotation={[Math.PI / 2, 0, 0]}
+        castShadow
+        geometry={roofGeometry}
+      >
         <meshStandardMaterial
-          color={roofColor}
-          roughness={0.7}
+          color={darkColor}
+          roughness={0.6}
           metalness={0.05}
-          transparent={isPreview}
-          opacity={isPreview ? 0.7 : 1}
-        />
-      </mesh>
-
-      {/* Small door detail */}
-      <mesh position={[0, 0.08, 0.115]} castShadow>
-        <boxGeometry args={[0.06, 0.1, 0.01]} />
-        <meshStandardMaterial
-          color={roofColor}
-          roughness={0.9}
-          transparent={isPreview}
-          opacity={isPreview ? 0.7 : 1}
+          transparent={isTransparent}
+          opacity={actualOpacity}
         />
       </mesh>
     </group>

@@ -24,13 +24,15 @@ const DOT_PATTERNS: Record<number, [number, number][]> = {
 }
 
 // Face rotations to show each number on top
+// Die layout: 1-front, 6-back, 2-bottom, 5-top, 3-right, 4-left
+// To show value N on top, we need to rotate appropriately:
 const FACE_ROTATIONS: Record<number, [number, number, number]> = {
-    1: [0, 0, 0],
-    2: [Math.PI / 2, 0, 0],
-    3: [0, 0, -Math.PI / 2],
-    4: [0, 0, Math.PI / 2],
-    5: [-Math.PI / 2, 0, 0],
-    6: [Math.PI, 0, 0],
+    1: [-Math.PI / 2, 0, 0],  // Rotate front (1) to top
+    2: [Math.PI, 0, 0],       // Rotate bottom (2) to top  
+    3: [0, 0, Math.PI / 2],   // Rotate right (3) to top
+    4: [0, 0, -Math.PI / 2],  // Rotate left (4) to top
+    5: [0, 0, 0],             // 5 is already on top
+    6: [Math.PI / 2, 0, 0],   // Rotate back (6) to top
 }
 
 function DieDots({ value, faceRotation, facePosition }: {

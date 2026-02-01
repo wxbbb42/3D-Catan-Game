@@ -7,26 +7,27 @@ import type { PlayerColor } from '@catan/shared'
 
 // Brighter, more saturated player colors for better visibility
 const PLAYER_COLORS: Record<PlayerColor, string> = {
-  red: '#D35F5F',
-  blue: '#5F8FD3',
-  orange: '#D3955F',
-  white: '#E8E8E0',
+  red: '#E25555',
+  blue: '#4A7FD0',
+  orange: '#E89540',
+  white: '#F0F0E8',
 }
 
 const PLAYER_COLORS_DARK: Record<PlayerColor, string> = {
-  red: '#A34545',
-  blue: '#456FA3',
-  orange: '#A37545',
-  white: '#C8C8C0',
+  red: '#B54040',
+  blue: '#3A5FA0',
+  orange: '#B87530',
+  white: '#D0D0C8',
 }
 
 interface CityProps {
   position: [number, number, number]
   color: PlayerColor
   isPreview?: boolean
+  opacity?: number
 }
 
-export function City({ position, color, isPreview = false }: CityProps) {
+export function City({ position, color, isPreview = false, opacity }: CityProps) {
   const groupRef = useRef<THREE.Group>(null)
 
   // Subtle floating animation for preview
@@ -37,88 +38,118 @@ export function City({ position, color, isPreview = false }: CityProps) {
   })
 
   const mainColor = PLAYER_COLORS[color]
-  const roofColor = PLAYER_COLORS_DARK[color]
+  const darkColor = PLAYER_COLORS_DARK[color]
+  const actualOpacity = opacity ?? (isPreview ? 0.7 : 1)
+  const isTransparent = actualOpacity < 1
 
-  // City sits at vertex slot - position is already at the gap level
+  // Castle-style city like the reference image with circular base and towers
   return (
     <group ref={groupRef} position={position}>
-      {/* Base platform - sits in the vertex gap */}
-      <mesh castShadow receiveShadow position={[0, 0.02, 0]}>
-        <cylinderGeometry args={[0.18, 0.20, 0.04, 6]} />
-        <meshStandardMaterial
-          color={roofColor}
-          roughness={0.8}
-          transparent={isPreview}
-          opacity={isPreview ? 0.7 : 1}
-        />
-      </mesh>
-
-      {/* Main building base */}
-      <mesh position={[0, 0.18, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.28, 0.28, 0.28]} />
+      {/* Circular base platform */}
+      <mesh castShadow receiveShadow position={[0, 0.03, 0]}>
+        <cylinderGeometry args={[0.22, 0.24, 0.06, 16]} />
         <meshStandardMaterial
           color={mainColor}
-          roughness={0.6}
+          roughness={0.5}
           metalness={0.1}
-          transparent={isPreview}
-          opacity={isPreview ? 0.7 : 1}
+          transparent={isTransparent}
+          opacity={actualOpacity}
         />
       </mesh>
 
-      {/* Main roof - pyramid style */}
-      <mesh position={[0, 0.40, 0]} castShadow rotation={[0, Math.PI / 4, 0]}>
-        <coneGeometry args={[0.22, 0.18, 4]} />
-        <meshStandardMaterial
-          color={roofColor}
-          roughness={0.7}
-          metalness={0.05}
-          transparent={isPreview}
-          opacity={isPreview ? 0.7 : 1}
-        />
-      </mesh>
-
-      {/* Tower - distinctive city feature */}
-      <mesh position={[0.12, 0.28, 0.12]} castShadow>
-        <cylinderGeometry args={[0.07, 0.07, 0.40, 8]} />
+      {/* Main castle body - center */}
+      <mesh castShadow receiveShadow position={[0, 0.16, 0]}>
+        <boxGeometry args={[0.18, 0.20, 0.18]} />
         <meshStandardMaterial
           color={mainColor}
-          roughness={0.6}
+          roughness={0.5}
           metalness={0.1}
-          transparent={isPreview}
-          opacity={isPreview ? 0.7 : 1}
+          transparent={isTransparent}
+          opacity={actualOpacity}
         />
       </mesh>
 
-      {/* Tower roof - cone */}
-      <mesh position={[0.12, 0.52, 0.12]} castShadow>
-        <coneGeometry args={[0.09, 0.12, 8]} />
+      {/* Center tower roof */}
+      <mesh position={[0, 0.32, 0]} castShadow rotation={[0, Math.PI / 4, 0]}>
+        <coneGeometry args={[0.12, 0.14, 4]} />
         <meshStandardMaterial
-          color={roofColor}
-          roughness={0.7}
+          color={darkColor}
+          roughness={0.6}
           metalness={0.05}
-          transparent={isPreview}
-          opacity={isPreview ? 0.7 : 1}
+          transparent={isTransparent}
+          opacity={actualOpacity}
         />
       </mesh>
 
-      {/* Flag on tower */}
-      <mesh position={[0.12, 0.62, 0.12]}>
-        <boxGeometry args={[0.08, 0.05, 0.01]} />
+      {/* Front left tower */}
+      <mesh castShadow position={[-0.10, 0.18, 0.10]}>
+        <boxGeometry args={[0.10, 0.30, 0.10]} />
         <meshStandardMaterial
-          color={roofColor}
-          transparent={isPreview}
-          opacity={isPreview ? 0.7 : 1}
+          color={mainColor}
+          roughness={0.5}
+          metalness={0.1}
+          transparent={isTransparent}
+          opacity={actualOpacity}
         />
       </mesh>
 
-      {/* Window details on main building */}
-      <mesh position={[0, 0.20, 0.145]} castShadow>
-        <boxGeometry args={[0.08, 0.10, 0.01]} />
+      {/* Front left tower roof */}
+      <mesh position={[-0.10, 0.38, 0.10]} castShadow rotation={[0, Math.PI / 4, 0]}>
+        <coneGeometry args={[0.07, 0.10, 4]} />
         <meshStandardMaterial
-          color={roofColor}
-          roughness={0.9}
-          transparent={isPreview}
-          opacity={isPreview ? 0.7 : 1}
+          color={darkColor}
+          roughness={0.6}
+          metalness={0.05}
+          transparent={isTransparent}
+          opacity={actualOpacity}
+        />
+      </mesh>
+
+      {/* Front right tower */}
+      <mesh castShadow position={[0.10, 0.18, 0.10]}>
+        <boxGeometry args={[0.10, 0.30, 0.10]} />
+        <meshStandardMaterial
+          color={mainColor}
+          roughness={0.5}
+          metalness={0.1}
+          transparent={isTransparent}
+          opacity={actualOpacity}
+        />
+      </mesh>
+
+      {/* Front right tower roof */}
+      <mesh position={[0.10, 0.38, 0.10]} castShadow rotation={[0, Math.PI / 4, 0]}>
+        <coneGeometry args={[0.07, 0.10, 4]} />
+        <meshStandardMaterial
+          color={darkColor}
+          roughness={0.6}
+          metalness={0.05}
+          transparent={isTransparent}
+          opacity={actualOpacity}
+        />
+      </mesh>
+
+      {/* Back tower (taller, main keep) */}
+      <mesh castShadow position={[0, 0.22, -0.08]}>
+        <boxGeometry args={[0.12, 0.38, 0.12]} />
+        <meshStandardMaterial
+          color={mainColor}
+          roughness={0.5}
+          metalness={0.1}
+          transparent={isTransparent}
+          opacity={actualOpacity}
+        />
+      </mesh>
+
+      {/* Back tower roof */}
+      <mesh position={[0, 0.46, -0.08]} castShadow rotation={[0, Math.PI / 4, 0]}>
+        <coneGeometry args={[0.09, 0.12, 4]} />
+        <meshStandardMaterial
+          color={darkColor}
+          roughness={0.6}
+          metalness={0.05}
+          transparent={isTransparent}
+          opacity={actualOpacity}
         />
       </mesh>
     </group>

@@ -67,17 +67,25 @@ export const HEX_DIRECTIONS = [
 export const PORT_COUNT = 9
 
 // ============== VISUAL LAYOUT CONSTANTS ==============
-// These control the physical appearance of the board (gaps between tiles)
+// These control the physical appearance of the board
 
-// Visual tile radius (smaller than HEX_SIZE to create gaps)
-export const HEX_TILE_RADIUS = 0.82
+// Visual tile radius.
+// NOTE: This controls the *rendered* hex geometry size. The board layout math
+// (axialToWorld) uses HEX_SIZE=1 as the center-to-center spacing baseline.
+//
+// If you want tiles to be tightly packed (edges touching), keep this ~= 1.
+// If you want visible gaps for roads/rails, reduce it (e.g. 0.82).
+export const HEX_TILE_RADIUS = 1
 
-// Gap between tiles (physical board style - 0.15-0.18)
-export const GAP_SIZE = 0.18
-
-// Road dimensions (fits in gap between tiles)
+// Road dimensions (sits on the edge between tiles)
 export const ROAD_WIDTH = 0.14
-export const ROAD_HEIGHT = 0.10
+export const ROAD_HEIGHT = 0.08
+
+// Rail dimensions (base that roads sit on)
+export const RAIL_HEIGHT = 0.06
+
+// Road base Y position (sits on top of rail)
+export const ROAD_BASE_Y = RAIL_HEIGHT + ROAD_HEIGHT / 2
 
 // Building base Y positions (sit in gaps, not float above)
 export const SETTLEMENT_BASE_Y = 0.08

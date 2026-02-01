@@ -8,6 +8,7 @@ import type {
   GamePhase,
   TradeProposal,
   SerializableBoardState,
+  PlayerColor,
 } from '@catan/shared'
 import { createEmptyResources } from '@catan/shared'
 
@@ -22,6 +23,12 @@ interface UIState {
   buildMode: 'none' | 'road' | 'settlement' | 'city'
   showTradePanel: boolean
   showDevCardPanel: boolean
+}
+
+// Test mode state
+interface TestModeState {
+  isTestMode: boolean
+  testPlayerColor: PlayerColor
 }
 
 // Connection state
@@ -42,6 +49,9 @@ interface GameStore {
 
   // UI state (local only)
   ui: UIState
+
+  // Test mode state
+  testMode: TestModeState
 
   // My local player state (convenience reference)
   myPlayerId: string | null
@@ -77,6 +87,10 @@ interface GameStore {
     toggleDevCardPanel: () => void
     clearSelection: () => void
 
+    // Test mode actions
+    setTestMode: (enabled: boolean) => void
+    setTestPlayerColor: (color: PlayerColor) => void
+
     // Reset
     reset: () => void
     clearGame: () => void
@@ -95,6 +109,11 @@ const initialUIState: UIState = {
   showDevCardPanel: false,
 }
 
+const initialTestModeState: TestModeState = {
+  isTestMode: false,
+  testPlayerColor: 'red',
+}
+
 const initialConnectionState: ConnectionState = {
   isConnected: false,
   isReconnecting: false,
@@ -107,6 +126,7 @@ export const useGameStore = create<GameStore>()(
     connection: initialConnectionState,
     game: null,
     ui: initialUIState,
+    testMode: initialTestModeState,
     myPlayerId: null,
     myResources: createEmptyResources(),
 
@@ -271,12 +291,24 @@ export const useGameStore = create<GameStore>()(
           },
         })),
 
+      // Test mode actions
+      setTestMode: (enabled) =>
+        set((state) => ({
+          testMode: { ...state.testMode, isTestMode: enabled },
+        })),
+
+      setTestPlayerColor: (color) =>
+        set((state) => ({
+          testMode: { ...state.testMode, testPlayerColor: color },
+        })),
+
       // Reset
       reset: () =>
         set({
           connection: initialConnectionState,
           game: null,
           ui: initialUIState,
+          testMode: initialTestModeState,
           myPlayerId: null,
           myResources: createEmptyResources(),
         }),
@@ -339,3 +371,11 @@ export const useGamePhase = () =>
 // Check connection
 export const useIsConnected = () =>
   useGameStore((state) => state.connection.isConnected)
+
+// Check test mode
+export const useIsTestMode = () =>
+  useGameStore((state) => state.testMode.isTestMode)
+
+// Get test player color
+export const useTestPlayerColor = () =>
+  useGameStore((state) => state.testMode.testPlayerColor)

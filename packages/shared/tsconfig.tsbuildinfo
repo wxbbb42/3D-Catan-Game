@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/constants/board.ts","./src/constants/costs.ts","./src/constants/index.ts","./src/types/board.ts","./src/types/events.ts","./src/types/game.ts","./src/types/index.ts","./src/types/player.ts","./src/types/resources.ts","./src/utils/hexmath.ts","./src/utils/index.ts","./src/validation/index.ts","./src/validation/schemas.ts"],"version":"5.9.3"}

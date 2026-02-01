@@ -181,6 +181,8 @@ export function createEdgeId(hex1: AxialCoord, hex2: AxialCoord): string {
 // ============== VERTEX CORNERS ==============
 
 // Get the 6 corner positions of a hex in world coordinates
+// Note: The hex geometry is created in XY plane and rotated -PI/2 around X
+// This transforms (x, y, 0) to (x, 0, -y), so we use -sin for z
 export function getHexCorners(
   center: { x: number; z: number },
   size: number = HEX_SIZE
@@ -188,11 +190,11 @@ export function getHexCorners(
   const corners: Array<{ x: number; z: number }> = []
 
   for (let i = 0; i < 6; i++) {
-    // Angle for pointy-top hexagons (30 degree offset)
-    const angle = (Math.PI / 3) * i - Math.PI / 6
+    // Flat-top orientation matching the rotated hex geometry
+    const angle = (Math.PI / 3) * i
     corners.push({
       x: center.x + size * Math.cos(angle),
-      z: center.z + size * Math.sin(angle)
+      z: center.z - size * Math.sin(angle)  // Negative sin due to -PI/2 rotation
     })
   }
 
@@ -205,10 +207,11 @@ export function getHexCorner(
   cornerIndex: number,
   size: number = HEX_SIZE
 ): { x: number; z: number } {
-  const angle = (Math.PI / 3) * (cornerIndex % 6) - Math.PI / 6
+  // Flat-top orientation matching the rotated hex geometry
+  const angle = (Math.PI / 3) * (cornerIndex % 6)
   return {
     x: center.x + size * Math.cos(angle),
-    z: center.z + size * Math.sin(angle)
+    z: center.z - size * Math.sin(angle)  // Negative sin due to -PI/2 rotation
   }
 }
 
@@ -308,6 +311,7 @@ export function getVertexWorldPosition(
 
 // Get the two corner positions of an edge (where roads are placed)
 // Edges are between 2 adjacent hexes
+// Uses hex centers to reliably calculate edge position
 export function getEdgeWorldPositions(
   edgeId: string,
   size: number = HEX_SIZE
@@ -316,36 +320,21 @@ export function getEdgeWorldPositions(
 
   const center1 = axialToWorld(hex1, size)
   const center2 = axialToWorld(hex2, size)
-  const corners1 = getHexCorners(center1, size)
-  const corners2 = getHexCorners(center2, size)
 
-  // Find the two corners that are shared (within tolerance)
-  const sharedCorners: Array<{ x: number; z: number }> = []
-  const tolerance = 0.01
-
-  for (const c1 of corners1) {
-    for (const c2 of corners2) {
-      const distSq = (c1.x - c2.x) ** 2 + (c1.z - c2.z) ** 2
-      if (distSq < tolerance) {
-        sharedCorners.push(c1)
-        break
-      }
-    }
-  }
-
-  if (sharedCorners.length >= 2) {
-    return { start: sharedCorners[0]!, end: sharedCorners[1]! }
-  }
-
-  // Fallback: use midpoint between hex centers
+  // Midpoint between hex centers
   const midX = (center1.x + center2.x) / 2
   const midZ = (center1.z + center2.z) / 2
-  // Approximate edge endpoints perpendicular to the line between hex centers
+
+  // Direction from hex1 to hex2
   const dx = center2.x - center1.x
   const dz = center2.z - center1.z
   const len = Math.sqrt(dx * dx + dz * dz)
-  const perpX = (-dz / len) * size * 0.5
-  const perpZ = (dx / len) * size * 0.5
+
+  // Edge endpoints are perpendicular to the center-to-center line
+  // Edge length is `size` (one side of the hexagon)
+  const edgeHalfLen = size * 0.5
+  const perpX = (-dz / len) * edgeHalfLen
+  const perpZ = (dx / len) * edgeHalfLen
 
   return {
     start: { x: midX + perpX, z: midZ + perpZ },

@@ -7,16 +7,30 @@ import { NumberToken } from './NumberToken'
 import { OceanPlane } from './OceanPlane'
 import { InteractiveMarkers } from './InteractiveMarkers'
 import { OptimizedHexTiles } from './OptimizedHexTiles'
+import { OceanHexTiles } from './OceanHexTiles'
 import { Settlement, City, Road, Robber } from '../Buildings'
 import { useBoard, usePlayers } from '@/stores/gameStore'
-import {
-  axialToWorld,
-  SETTLEMENT_BASE_Y,
-  CITY_BASE_Y,
-  ROAD_HEIGHT,
-  getVertexWorldPosition,
-  getEdgeWorldPositions
-} from '@catan/shared'
+import { axialToWorld } from '@catan/shared'
+
+// Parse position ID (format: "x,z" where values are *100)
+function parsePositionId(id: string): { x: number; z: number } | null {
+  const parts = id.split(',')
+  if (parts.length !== 2) return null
+  const x = parseInt(parts[0]!, 10) / 100
+  const z = parseInt(parts[1]!, 10) / 100
+  if (isNaN(x) || isNaN(z)) return null
+  return { x, z }
+}
+
+// Parse edge ID (format: "x1,z1|x2,z2")
+function parseEdgeId(id: string): { start: { x: number; z: number }; end: { x: number; z: number } } | null {
+  const parts = id.split('|')
+  if (parts.length !== 2) return null
+  const start = parsePositionId(parts[0]!)
+  const end = parsePositionId(parts[1]!)
+  if (!start || !end) return null
+  return { start, end }
+}
 
 // Loading placeholder while 3D assets load
 function BoardLoader() {
@@ -47,6 +61,9 @@ function BoardContent() {
       {/* Reduces draw calls from ~196 to ~25 (87% reduction) */}
       <OptimizedHexTiles hexes={board.hexes} />
 
+      {/* Ocean hex tiles surrounding the island */}
+      <OceanHexTiles hexes={board.hexes} />
+
       {/* Ocean base */}
       <OceanPlane />
 
@@ -76,30 +93,28 @@ function BoardContent() {
           const player = players.find((p) => p.id === building.playerId)
           const color = player?.color ?? 'white'
 
-          // Get proper vertex position using the new helper function
-          try {
-            const vertexPos = getVertexWorldPosition(building.vertexId)
+          // Parse position from vertex ID (format: "x,z" where values are *100)
+          const vertexPos = parsePositionId(building.vertexId)
+          if (!vertexPos) return null
+          
+          const buildingY = 0.22
 
-            if (building.type === 'settlement') {
-              return (
-                <Settlement
-                  key={`building-${i}`}
-                  position={[vertexPos.x, SETTLEMENT_BASE_Y, vertexPos.z]}
-                  color={color}
-                />
-              )
-            } else {
-              return (
-                <City
-                  key={`building-${i}`}
-                  position={[vertexPos.x, CITY_BASE_Y, vertexPos.z]}
-                  color={color}
-                />
-              )
-            }
-          } catch {
-            // Skip buildings with invalid vertex IDs
-            return null
+          if (building.type === 'settlement') {
+            return (
+              <Settlement
+                key={`building-${i}`}
+                position={[vertexPos.x, buildingY, vertexPos.z]}
+                color={color}
+              />
+            )
+          } else {
+            return (
+              <City
+                key={`building-${i}`}
+                position={[vertexPos.x, buildingY, vertexPos.z]}
+                color={color}
+              />
+            )
           }
         })}
       </group>
@@ -110,22 +125,20 @@ function BoardContent() {
           const player = players.find((p) => p.id === road.playerId)
           const color = player?.color ?? 'white'
 
-          // Get proper edge positions using the new helper function
-          try {
-            const edgePos = getEdgeWorldPositions(road.edgeId)
+          // Parse edge positions from edge ID (format: "x1,z1|x2,z2")
+          const edgePos = parseEdgeId(road.edgeId)
+          if (!edgePos) return null
+          
+          const roadY = 0.28
 
-            return (
-              <Road
-                key={`road-${i}`}
-                start={[edgePos.start.x, ROAD_HEIGHT / 2, edgePos.start.z]}
-                end={[edgePos.end.x, ROAD_HEIGHT / 2, edgePos.end.z]}
-                color={color}
-              />
-            )
-          } catch {
-            // Skip roads with invalid edge IDs
-            return null
-          }
+          return (
+            <Road
+              key={`road-${i}`}
+              start={[edgePos.start.x, roadY, edgePos.start.z]}
+              end={[edgePos.end.x, roadY, edgePos.end.z]}
+              color={color}
+            />
+          )
         })}
       </group>
 
