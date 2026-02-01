@@ -1,0 +1,224 @@
+// Prisma schema for 3D Catan game
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============== USER & AUTH ==============
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String    @unique
+  name          String?
+  image         String?
+
+  // OAuth
+  accounts      Account[]
+  sessions      Session[]
+
+  // Game relations
+  gamesHosted   Game[]       @relation("GameHost")
+  gamePlayers   GamePlayer[]
+
+  // Stats
+  gamesPlayed   Int       @default(0)
+  gamesWon      Int       @default(0)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([username])
+}
+
+// NextAuth.js models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============== GAME ==============
+
+enum GameStatus {
+  WAITING
+  SETUP
+  PLAYING
+  FINISHED
+  ABANDONED
+}
+
+model Game {
+  id           String      @id @default(cuid())
+  code         String      @unique
+
+  // Host
+  hostId       String
+  host         User        @relation("GameHost", fields: [hostId], references: [id])
+
+  // Status
+  status       GameStatus  @default(WAITING)
+  maxPlayers   Int         @default(4)
+
+  // Board configuration (stored as JSON)
+  boardConfig  Json?
+
+  // Full game state (stored as JSON)
+  gameState    Json?
+
+  // Turn tracking
+  currentTurn  Int         @default(0)
+  turnOrder    String[]    @default([])
+
+  // Relations
+  players      GamePlayer[]
+  trades       Trade[]
+  gameLog      GameLogEntry[]
+
+  // Winner
+  winnerId     String?
+
+  // Timestamps
+  createdAt    DateTime    @default(now())
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  updatedAt    DateTime    @updatedAt
+
+  @@index([code])
+  @@index([status])
+  @@index([hostId])
+}
+
+model GamePlayer {
+  id           String   @id @default(cuid())
+
+  gameId       String
+  game         Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+
+  // Player state
+  color        String   // red, blue, orange, white
+  turnOrder    Int
+  isConnected  Boolean  @default(true)
+
+  // Resources (JSON)
+  resources    Json     @default("{\"brick\":0,\"lumber\":0,\"ore\":0,\"grain\":0,\"wool\":0}")
+
+  // Development cards (JSON array)
+  devCards     Json     @default("[]")
+
+  // Buildings (JSON arrays of IDs)
+  settlements  Json     @default("[]")
+  cities       Json     @default("[]")
+  roads        Json     @default("[]")
+
+  // Stats
+  victoryPoints      Int @default(0)
+  knightsPlayed      Int @default(0)
+  longestRoadLength  Int @default(0)
+
+  // Achievements
+  hasLongestRoad     Boolean @default(false)
+  hasLargestArmy     Boolean @default(false)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([gameId, userId])
+  @@unique([gameId, color])
+  @@index([gameId])
+  @@index([userId])
+}
+
+// ============== TRADING ==============
+
+enum TradeStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+model Trade {
+  id              String      @id @default(cuid())
+
+  gameId          String
+  game            Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  proposerId      String
+  targetPlayerId  String?     // null for open trades / bank trades
+
+  // Resources being exchanged (JSON)
+  offering        Json
+  requesting      Json
+
+  tradeType       String      // "player", "bank", "port"
+  portType        String?     // "generic", "brick", etc.
+
+  status          TradeStatus @default(PENDING)
+
+  createdAt       DateTime    @default(now())
+  respondedAt     DateTime?
+
+  @@index([gameId])
+  @@index([proposerId])
+}
+
+// ============== GAME LOG ==============
+
+model GameLogEntry {
+  id        String   @id @default(cuid())
+
+  gameId    String
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  playerId  String?  // null for system events
+  action    String   // "roll_dice", "build_settlement", etc.
+  data      Json     // Action-specific data
+
+  createdAt DateTime @default(now())
+
+  @@index([gameId])
+  @@index([createdAt])
+}

@@ -1,0 +1,166 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground: #4A4A4A;
+  --background: #FAF8F5;
+
+  /* Pastel palette */
+  --pastel-pink: #F4A4A4;
+  --pastel-blue: #A4C4F4;
+  --pastel-orange: #F4CDA4;
+  --pastel-green: #A8D8A8;
+  --pastel-yellow: #F4E4A4;
+  --pastel-purple: #C4B4E4;
+  --pastel-teal: #A4D8D4;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Custom scrollbar - soft pastel style */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F0EDE8;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D4D0CC;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C4C0BC;
+}
+
+/* Game canvas container */
+.game-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* UI overlay on top of canvas */
+.game-ui {
+  position: relative;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.game-ui > * {
+  pointer-events: auto;
+}
+
+/* Glassmorphism card style */
+.glass-card {
+  @apply bg-white/80 backdrop-blur-md rounded-2xl shadow-soft border border-white/50;
+}
+
+/* Soft button styles */
+.btn-primary {
+  @apply px-6 py-3 bg-ui-accent hover:bg-ui-accent-hover text-white font-medium rounded-xl
+         shadow-soft transition-all duration-200 hover:shadow-soft-md hover:-translate-y-0.5;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 bg-white hover:bg-gray-50 text-ui-text font-medium rounded-xl
+         border border-ui-border shadow-soft transition-all duration-200 hover:shadow-soft-md;
+}
+
+.btn-success {
+  @apply px-6 py-3 bg-ui-success hover:bg-green-300 text-green-800 font-medium rounded-xl
+         shadow-soft transition-all duration-200 hover:shadow-soft-md;
+}
+
+.btn-warning {
+  @apply px-6 py-3 bg-ui-warning hover:bg-amber-200 text-amber-800 font-medium rounded-xl
+         shadow-soft transition-all duration-200 hover:shadow-soft-md;
+}
+
+/* Resource card styles */
+.resource-card {
+  @apply rounded-xl shadow-soft p-3 flex flex-col items-center justify-center
+         bg-white border border-ui-border transition-all duration-200;
+  min-width: 70px;
+}
+
+.resource-card:hover {
+  @apply shadow-soft-md -translate-y-0.5;
+}
+
+.resource-card.brick { @apply border-resource-brick bg-resource-brick/20; }
+.resource-card.lumber { @apply border-resource-lumber bg-resource-lumber/20; }
+.resource-card.ore { @apply border-resource-ore bg-resource-ore/20; }
+.resource-card.grain { @apply border-resource-grain bg-resource-grain/20; }
+.resource-card.wool { @apply border-resource-wool bg-resource-wool/20; }
+
+/* Player color indicators */
+.player-indicator {
+  @apply w-5 h-5 rounded-full border-2 border-white shadow-soft;
+}
+
+.player-indicator.red { @apply bg-player-red; }
+.player-indicator.blue { @apply bg-player-blue; }
+.player-indicator.orange { @apply bg-player-orange; }
+.player-indicator.white { @apply bg-player-white border-gray-200; }
+
+/* Input styles */
+.input-field {
+  @apply w-full px-4 py-3 bg-white border border-ui-border rounded-xl
+         focus:outline-none focus:ring-2 focus:ring-ui-accent/50 focus:border-ui-accent
+         transition-all duration-200 placeholder:text-ui-text-muted;
+}
+
+/* Tooltip */
+.tooltip {
+  @apply absolute z-50 px-3 py-2 text-sm bg-ui-text text-white rounded-lg shadow-soft-lg
+         opacity-0 invisible transition-all duration-200;
+}
+
+.tooltip-trigger:hover .tooltip {
+  @apply opacity-100 visible;
+}
+
+/* Dice animation */
+@keyframes dice-roll {
+  0% { transform: rotateX(0deg) rotateY(0deg); }
+  25% { transform: rotateX(90deg) rotateY(45deg); }
+  50% { transform: rotateX(180deg) rotateY(90deg); }
+  75% { transform: rotateX(270deg) rotateY(135deg); }
+  100% { transform: rotateX(360deg) rotateY(180deg); }
+}
+
+.dice-rolling {
+  animation: dice-roll 0.5s ease-out;
+}
+
+/* Gradient backgrounds */
+.gradient-pastel {
+  background: linear-gradient(135deg, #A4C4F4 0%, #C4B4E4 50%, #F4A4A4 100%);
+}
+
+.gradient-ocean {
+  background: linear-gradient(180deg, #B4D8E8 0%, #8AC4D8 100%);
+}
+
+.gradient-sunset {
+  background: linear-gradient(135deg, #F4CDA4 0%, #F4A4A4 50%, #C4B4E4 100%);
+}
