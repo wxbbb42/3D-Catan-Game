@@ -24,6 +24,7 @@ export interface ServerToClientEvents {
   'game:turn_changed': (payload: { playerId: string; turnPhase: string }) => void
   'game:phase_changed': (payload: { phase: string }) => void
   'game:ended': (payload: { winnerId: string; finalState: GameState }) => void
+  'game:roll_for_order_result': (payload: RollForOrderResultPayload) => void
 
   // Dice Events
   'dice:rolled': (payload: DiceRolledPayload) => void
@@ -81,6 +82,7 @@ export interface ClientToServerEvents {
 
   // Game Actions
   'game:roll_dice': () => void
+  'game:roll_for_order': () => void
   'game:end_turn': () => void
   'game:request_state': () => void
 
@@ -200,4 +202,12 @@ export interface ChatMessagePayload {
   username: string
   message: string
   timestamp: number
+}
+
+export interface RollForOrderResultPayload {
+  playerId: string
+  dice: [number, number]
+  total: number
+  allRolled?: boolean
+  turnOrder?: string[]
 }

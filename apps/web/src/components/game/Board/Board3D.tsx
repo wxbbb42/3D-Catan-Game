@@ -1,13 +1,13 @@
 'use client'
 
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Environment, PerspectiveCamera, ContactShadows, Sky } from '@react-three/drei'
+import { OrbitControls, PerspectiveCamera, ContactShadows, Sky } from '@react-three/drei'
 import { Suspense } from 'react'
 import { NumberToken } from './NumberToken'
-import { OceanPlane } from './OceanPlane'
+import { ToonOceanPlane } from './ToonOceanPlane'
 import { InteractiveMarkers } from './InteractiveMarkers'
-import { OptimizedHexTiles } from './OptimizedHexTiles'
-import { OceanHexTiles } from './OceanHexTiles'
+import { ToonHexTiles } from './ToonHexTiles'
+import { ToonOceanHexTiles } from './ToonOceanHexTiles'
 import { Settlement, City, Road, Robber } from '../Buildings'
 import { useBoard, usePlayers } from '@/stores/gameStore'
 import { axialToWorld } from '@catan/shared'
@@ -42,7 +42,7 @@ function BoardLoader() {
   )
 }
 
-// The actual board content
+// The actual board content with toon/cel-shading style
 function BoardContent() {
   const board = useBoard()
   const players = usePlayers()
@@ -57,15 +57,14 @@ function BoardContent() {
 
   return (
     <group name="game-board">
-      {/* Optimized instanced hex tiles with terrain decorations */}
-      {/* Reduces draw calls from ~196 to ~25 (87% reduction) */}
-      <OptimizedHexTiles hexes={board.hexes} />
+      {/* Toon-styled hex tiles with cel-shading */}
+      <ToonHexTiles hexes={board.hexes} />
 
-      {/* Ocean hex tiles surrounding the island */}
-      <OceanHexTiles hexes={board.hexes} />
+      {/* Toon-styled ocean hex tiles surrounding the island */}
+      <ToonOceanHexTiles hexes={board.hexes} />
 
-      {/* Ocean base */}
-      <OceanPlane />
+      {/* Toon-styled ocean base */}
+      <ToonOceanPlane />
 
       {/* Number tokens */}
       <group name="number-tokens">
@@ -96,7 +95,7 @@ function BoardContent() {
           // Parse position from vertex ID (format: "x,z" where values are *100)
           const vertexPos = parsePositionId(building.vertexId)
           if (!vertexPos) return null
-          
+
           const buildingY = 0.22
 
           if (building.type === 'settlement') {
@@ -128,7 +127,7 @@ function BoardContent() {
           // Parse edge positions from edge ID (format: "x1,z1|x2,z2")
           const edgePos = parseEdgeId(road.edgeId)
           if (!edgePos) return null
-          
+
           const roadY = 0.28
 
           return (
@@ -154,10 +153,10 @@ export interface Board3DProps {
 
 export function Board3D({ className }: Board3DProps) {
   return (
-    <div className={className}>
+    <div className={`relative ${className ?? ''}`}>
       <Canvas shadows>
-        {/* Soft pastel background */}
-        <color attach="background" args={['#E8F0F4']} />
+        {/* Soft pastel background for toon style */}
+        <color attach="background" args={['#87CEEB']} />
 
         {/* Soft sky gradient */}
         <Sky
@@ -191,14 +190,14 @@ export function Board3D({ className }: Board3DProps) {
           dampingFactor={0.05}
         />
 
-        {/* Soft, warm lighting for pastel aesthetic */}
-        <ambientLight intensity={0.6} color="#FFF8F0" />
+        {/* Bright ambient light for toon look */}
+        <ambientLight intensity={0.7} color="#FFFFFF" />
 
-        {/* Main sun light - warm and soft */}
+        {/* Main directional light - key light for cel-shading */}
         <directionalLight
           position={[8, 15, 5]}
-          intensity={0.8}
-          color="#FFF4E8"
+          intensity={1.0}
+          color="#FFFFFF"
           castShadow
           shadow-mapSize={[2048, 2048]}
           shadow-camera-far={40}
@@ -209,31 +208,21 @@ export function Board3D({ className }: Board3DProps) {
           shadow-bias={-0.0001}
         />
 
-        {/* Fill light - cool blue tint */}
+        {/* Fill light */}
         <directionalLight
           position={[-8, 8, -5]}
-          intensity={0.3}
-          color="#E0E8F0"
+          intensity={0.4}
+          color="#E8F4FF"
         />
-
-        {/* Rim light for depth */}
-        <directionalLight
-          position={[0, 5, -10]}
-          intensity={0.2}
-          color="#F8F0E8"
-        />
-
-        {/* Soft environment for reflections */}
-        <Environment preset="dawn" />
 
         {/* Ground contact shadows */}
         <ContactShadows
           position={[0, -0.1, 0]}
-          opacity={0.25}
+          opacity={0.3}
           scale={25}
-          blur={2.5}
+          blur={2}
           far={8}
-          color="#8090A0"
+          color="#2A4A6A"
         />
 
         {/* Main content */}

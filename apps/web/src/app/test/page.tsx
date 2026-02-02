@@ -118,11 +118,13 @@ function generateBalancedBoard(): SerializableBoardState {
 }
 
 export default function TestBoardPage() {
-  const { actions, game } = useGameStore()
+  const { actions } = useGameStore()
   const buildMode = useGameStore((state) => state.ui.buildMode)
   const [testPlayerColor, setTestPlayerColor] = useState<PlayerColor>('red')
   const [diceValues, setDiceValues] = useState<[number, number]>([1, 1])
   const [isRolling, setIsRolling] = useState(false)
+  const [showDiceModal, setShowDiceModal] = useState(false)
+  const [canConfirm, setCanConfirm] = useState(false)
 
   // Initialize test board on mount
   useEffect(() => {
@@ -194,71 +196,73 @@ export default function TestBoardPage() {
 
   const handleRollDice = useCallback(() => {
     if (isRolling) return
+
+    // Open modal and start rolling
+    setShowDiceModal(true)
     setIsRolling(true)
-    
+    setCanConfirm(false)
+
     // Generate random dice values
     const die1 = Math.floor(Math.random() * 6) + 1 as 1 | 2 | 3 | 4 | 5 | 6
     const die2 = Math.floor(Math.random() * 6) + 1 as 1 | 2 | 3 | 4 | 5 | 6
     setDiceValues([die1, die2])
 
-    // Reset rolling state after animation
+    // Allow confirm after animation completes
     setTimeout(() => {
       setIsRolling(false)
+      setCanConfirm(true)
     }, 1500)
   }, [isRolling])
+
+  const handleConfirmDice = useCallback(() => {
+    setShowDiceModal(false)
+    setCanConfirm(false)
+  }, [])
 
   const setBuildMode = useCallback((mode: 'settlement' | 'city' | 'road' | null) => {
     actions.setBuildMode(mode === null ? 'none' : mode)
   }, [actions])
-
-  const buildingCount = game?.board?.buildings?.length ?? 0
-  const roadCount = game?.board?.roads?.length ?? 0
 
   return (
     <main className="h-screen w-screen relative">
       <Board3D className="h-full w-full" />
 
       {/* Overlay UI - Title */}
-      <div className="absolute top-4 left-4 glass-card p-4">
-        <h1 className="text-lg font-bold text-ui-text mb-1">3D Catan Test Page</h1>
-        <p className="text-sm text-ui-text-muted">
+      <div className="absolute top-4 left-4 glass-card p-3">
+        <h1 className="text-base font-bold text-ui-text">3D Catan Test Page</h1>
+        <p className="text-xs text-ui-text-muted">
           Drag to rotate • Scroll to zoom • Shift+drag to pan
         </p>
-        <div className="mt-2 text-xs text-ui-text-muted">
-          Buildings: {buildingCount} | Roads: {roadCount}
-        </div>
       </div>
 
       {/* Back button */}
       <Link
         href="/"
-        className="absolute top-4 right-4 glass-card px-4 py-2 flex items-center gap-2 text-ui-text hover:bg-white/90 transition-colors"
+        className="absolute top-4 right-4 glass-card px-3 py-2 flex items-center gap-2 text-sm text-ui-text hover:bg-white/90 transition-colors"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        Back to Home
+        Home
       </Link>
 
-      {/* Build Controls Panel */}
-      <div className="absolute top-24 left-4 glass-card p-4 w-64">
-        <h2 className="text-sm font-semibold text-ui-text mb-3">Build Controls</h2>
-        
+      {/* Right side panel - Build Controls + Dice */}
+      <div className="absolute top-14 right-4 glass-card p-3 w-44">
         {/* Player Color Selection */}
-        <div className="mb-4">
-          <label className="text-xs text-ui-text-muted mb-2 block">Player Color:</label>
-          <div className="flex gap-2">
+        <div className="mb-3">
+          <label className="text-xs text-ui-text-muted mb-1 block">Player:</label>
+          <div className="flex gap-1.5">
             {(['red', 'blue', 'orange', 'white'] as PlayerColor[]).map((color) => (
               <button
                 key={color}
                 onClick={() => setTestPlayerColor(color)}
-                className={`w-8 h-8 rounded-full border-2 transition-all ${
-                  testPlayerColor === color 
-                    ? 'border-ui-accent scale-110' 
+                className={`w-6 h-6 rounded-full border-2 transition-all ${
+                  testPlayerColor === color
+                    ? 'border-ui-accent scale-110'
                     : 'border-transparent opacity-60 hover:opacity-100'
                 }`}
                 style={{
-                  backgroundColor: color === 'red' ? '#D35F5F' 
+                  backgroundColor: color === 'red' ? '#D35F5F'
                     : color === 'blue' ? '#5F8FD3'
                     : color === 'orange' ? '#D3955F'
                     : '#E8E8E0'
@@ -270,123 +274,148 @@ export default function TestBoardPage() {
         </div>
 
         {/* Build Mode Buttons */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <button
             onClick={() => setBuildMode(buildMode === 'settlement' ? null : 'settlement')}
-            className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
+            className={`w-full px-2 py-1.5 rounded text-xs font-medium transition-colors ${
               buildMode === 'settlement'
                 ? 'bg-green-500 text-white'
                 : 'bg-white/50 text-ui-text hover:bg-white/80'
             }`}
           >
-            🏠 Place Settlement
+            🏠 Settlement
           </button>
           <button
             onClick={() => setBuildMode(buildMode === 'city' ? null : 'city')}
-            className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
+            className={`w-full px-2 py-1.5 rounded text-xs font-medium transition-colors ${
               buildMode === 'city'
                 ? 'bg-purple-500 text-white'
                 : 'bg-white/50 text-ui-text hover:bg-white/80'
             }`}
           >
-            🏰 Upgrade to City
+            🏰 City
           </button>
           <button
             onClick={() => setBuildMode(buildMode === 'road' ? null : 'road')}
-            className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
+            className={`w-full px-2 py-1.5 rounded text-xs font-medium transition-colors ${
               buildMode === 'road'
                 ? 'bg-amber-500 text-white'
                 : 'bg-white/50 text-ui-text hover:bg-white/80'
             }`}
           >
-            🛤️ Place Road
+            🛤️ Road
           </button>
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-4 pt-4 border-t border-white/20 space-y-2">
+        <div className="mt-2 pt-2 border-t border-white/20 flex gap-1">
           <button
             onClick={handleReset}
-            className="w-full px-3 py-2 rounded text-sm font-medium bg-red-500/80 text-white hover:bg-red-500 transition-colors"
+            className="flex-1 px-2 py-1 rounded text-xs font-medium bg-red-500/80 text-white hover:bg-red-500 transition-colors"
           >
-            🗑️ Reset All Buildings
+            Reset
           </button>
           <button
             onClick={handleRandomize}
-            className="w-full px-3 py-2 rounded text-sm font-medium bg-blue-500/80 text-white hover:bg-blue-500 transition-colors"
+            className="flex-1 px-2 py-1 rounded text-xs font-medium bg-blue-500/80 text-white hover:bg-blue-500 transition-colors"
           >
-            🔀 Randomize Board
+            Random
           </button>
         </div>
-      </div>
 
-      {/* Dice Panel */}
-      <div className="absolute top-24 right-4 glass-card p-4">
-        <h2 className="text-sm font-semibold text-ui-text mb-3 text-center">Dice</h2>
-        <div className="mb-3">
-          <Dice3D values={diceValues} isRolling={isRolling} size="small" />
+        {/* Dice - simplified */}
+        <div className="mt-2 pt-2 border-t border-white/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🎲</span>
+              <span className="text-lg font-bold text-ui-text">
+                {isRolling ? '?' : diceValues[0] + diceValues[1]}
+              </span>
+            </div>
+            <button
+              onClick={handleRollDice}
+              disabled={isRolling}
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                isRolling
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  : 'bg-green-500 text-white hover:bg-green-600'
+              }`}
+            >
+              {isRolling ? '...' : 'Roll'}
+            </button>
+          </div>
         </div>
-        <div className="text-center mb-3">
-          <span className="text-2xl font-bold text-ui-text">
-            {isRolling ? '?' : diceValues[0] + diceValues[1]}
-          </span>
-        </div>
-        <button
-          onClick={handleRollDice}
-          disabled={isRolling}
-          className={`w-full px-4 py-2 rounded text-sm font-medium transition-colors ${
-            isRolling
-              ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-              : 'bg-green-500 text-white hover:bg-green-600'
-          }`}
-        >
-          {isRolling ? 'Rolling...' : '🎲 Roll Dice'}
-        </button>
       </div>
 
       {/* Color legend */}
-      <div className="absolute bottom-4 left-4 glass-card p-4">
-        <h2 className="text-sm font-semibold text-ui-text mb-3">Terrain Types</h2>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-terrain-hills" />
-            <span className="text-ui-text-muted">Hills (Brick)</span>
+      <div className="absolute bottom-4 left-4 glass-card p-3">
+        <h2 className="text-xs font-semibold text-ui-text mb-2">Terrain</h2>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-terrain-hills" />
+            <span className="text-ui-text-muted">Hills</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-terrain-forest" />
-            <span className="text-ui-text-muted">Forest (Lumber)</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-terrain-forest" />
+            <span className="text-ui-text-muted">Forest</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-terrain-mountains" />
-            <span className="text-ui-text-muted">Mountains (Ore)</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-terrain-mountains" />
+            <span className="text-ui-text-muted">Mountains</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-terrain-fields" />
-            <span className="text-ui-text-muted">Fields (Grain)</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-terrain-fields" />
+            <span className="text-ui-text-muted">Fields</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-terrain-pasture" />
-            <span className="text-ui-text-muted">Pasture (Wool)</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-terrain-pasture" />
+            <span className="text-ui-text-muted">Pasture</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-terrain-desert" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-terrain-desert" />
             <span className="text-ui-text-muted">Desert</span>
           </div>
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="absolute bottom-4 right-4 glass-card p-4 max-w-xs">
-        <h2 className="text-sm font-semibold text-ui-text mb-2">How to Test</h2>
-        <ol className="text-xs text-ui-text-muted space-y-1 list-decimal list-inside">
-          <li>Select a player color</li>
-          <li>Click "Place Settlement" or "Place Road"</li>
-          <li>Click on a vertex (for buildings) or edge (for roads)</li>
-          <li>Click "Upgrade to City" to upgrade existing settlements</li>
-          <li>Use "Reset" to clear all buildings</li>
-          <li>Use "Randomize" for a new board layout</li>
-        </ol>
-      </div>
+      {/* Dice Roll Modal */}
+      {showDiceModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="glass-card p-6 rounded-2xl flex flex-col items-center">
+            <h2 className="text-lg font-bold text-ui-text mb-4">🎲 Rolling Dice</h2>
+
+            {/* 3D Dice */}
+            <div className="mb-4">
+              <Dice3D values={diceValues} isRolling={isRolling} size="large" />
+            </div>
+
+            {/* Result */}
+            <div className="text-center mb-4">
+              <span className="text-4xl font-bold text-ui-text">
+                {isRolling ? '?' : diceValues[0] + diceValues[1]}
+              </span>
+              {!isRolling && (
+                <p className="text-sm text-ui-text-muted mt-1">
+                  ({diceValues[0]} + {diceValues[1]})
+                </p>
+              )}
+            </div>
+
+            {/* Confirm Button */}
+            <button
+              onClick={handleConfirmDice}
+              disabled={!canConfirm}
+              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                canConfirm
+                  ? 'bg-green-500 text-white hover:bg-green-600'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {isRolling ? 'Rolling...' : 'OK'}
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

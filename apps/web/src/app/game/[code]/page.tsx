@@ -277,7 +277,7 @@ function LobbyView({ gameCode }: { gameCode: string }) {
 // Roll for turn order phase component
 function RollForOrderPhase() {
   const game = useGameStore((state) => state.game)
-  const storePlayerId = useGameStore((state) => state.playerId)
+  const storePlayerId = useGameStore((state) => state.myPlayerId)
   const { rollForOrder, playerId: socketPlayerId } = useSocketContext()
 
   if (!game || !game.rollForOrderState) return null
