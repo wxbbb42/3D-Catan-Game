@@ -6,17 +6,18 @@ import { useSession } from 'next-auth/react'
 import { useGameStore } from '@/stores/gameStore'
 import type { GameState, LobbyState, LobbyPlayer, ResourceCount } from '@catan/shared'
 
-// Helper to get/set persistent playerId from localStorage
+// Helper to get/set persistent playerId from sessionStorage (per-tab)
+// Using sessionStorage ensures each browser tab gets its own player identity
 const PLAYER_ID_KEY = 'catan_player_id'
 
 function getStoredPlayerId(): string | null {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem(PLAYER_ID_KEY)
+  return sessionStorage.getItem(PLAYER_ID_KEY)
 }
 
 function storePlayerId(playerId: string): void {
   if (typeof window === 'undefined') return
-  localStorage.setItem(PLAYER_ID_KEY, playerId)
+  sessionStorage.setItem(PLAYER_ID_KEY, playerId)
 }
 
 // Socket types aligned with server events
@@ -83,8 +84,8 @@ export interface ServerToClientEvents {
 
 export interface ClientToServerEvents {
   // Lobby
-  'lobby:create': (payload: { maxPlayers?: number }) => void
-  'lobby:join': (payload: { gameCode: string }) => void
+  'lobby:create': (payload: { maxPlayers?: number; username?: string }) => void
+  'lobby:join': (payload: { gameCode: string; username?: string }) => void
   'lobby:leave': () => void
   'lobby:ready': (payload: { isReady: boolean }) => void
   'lobby:set_color': (payload: { color: string }) => void
@@ -297,21 +298,25 @@ export function useSocket() {
   }, [session, status, actions])
 
   // Lobby actions
-  const createLobby = useCallback((maxPlayers: number = 4) => {
+  const createLobby = useCallback((maxPlayers: number = 4, guestName?: string) => {
     if (!socketRef.current) {
       setError('Not connected to server')
       return
     }
-    socketRef.current.emit('lobby:create', { maxPlayers })
-  }, [])
+    // Use session name if logged in, otherwise use provided guest name
+    const username = session?.user?.name ?? guestName ?? 'Guest'
+    socketRef.current.emit('lobby:create', { maxPlayers, username })
+  }, [session])
 
-  const joinLobby = useCallback((gameCode: string) => {
+  const joinLobby = useCallback((gameCode: string, guestName?: string) => {
     if (!socketRef.current) {
       setError('Not connected to server')
       return
     }
-    socketRef.current.emit('lobby:join', { gameCode })
-  }, [])
+    // Use session name if logged in, otherwise use provided guest name
+    const username = session?.user?.name ?? guestName ?? 'Guest'
+    socketRef.current.emit('lobby:join', { gameCode, username })
+  }, [session])
 
   const leaveLobby = useCallback(() => {
     if (!socketRef.current) return
@@ -425,7 +430,7 @@ export function useSocket() {
     setLobby(null)
     // Clear stored playerId so next game gets a fresh one
     if (typeof window !== 'undefined') {
-      localStorage.removeItem(PLAYER_ID_KEY)
+      sessionStorage.removeItem(PLAYER_ID_KEY)
     }
     // Clear game state
     actions.clearGame()
@@ -439,6 +444,10 @@ export function useSocket() {
     error,
     isGameStarting,
     countdown,
+
+    // Auth info
+    isAuthenticated: !!session?.user,
+    userName: session?.user?.name ?? null,
 
     // Lobby actions
     createLobby,

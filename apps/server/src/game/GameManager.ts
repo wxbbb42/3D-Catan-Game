@@ -167,7 +167,7 @@ export function handleRollForOrder(code: string, playerId: string): {
       setupState: {
         currentRound: 1,
         placementType: 'settlement',
-        settlementsNeedingRoads: new Map(),
+        settlementsNeedingRoads: {},
       },
     }
 
@@ -385,8 +385,10 @@ export function handleBuildSettlement(
   // Check for setup phase advancement
   if (isSetup && game.setupState) {
     // Track that this settlement needs a road
-    const newSettlementsNeedingRoads = new Map(game.setupState.settlementsNeedingRoads)
-    newSettlementsNeedingRoads.set(playerId, vertexId)
+    const newSettlementsNeedingRoads = {
+      ...game.setupState.settlementsNeedingRoads,
+      [playerId]: vertexId,
+    }
 
     updatedGame = {
       ...updatedGame,
@@ -468,8 +470,7 @@ export function handleBuildRoad(
   // Handle setup phase advancement
   if (isSetup && game.setupState) {
     // Clear the road requirement for this player
-    const newSettlementsNeedingRoads = new Map(game.setupState.settlementsNeedingRoads)
-    newSettlementsNeedingRoads.delete(playerId)
+    const { [playerId]: _, ...newSettlementsNeedingRoads } = game.setupState.settlementsNeedingRoads
 
     // Move to next player or phase
     const nextPlayerIndex = (game.currentPlayerIndex + (game.phase === 'setup_second' ? -1 : 1)) % game.turnOrder.length
@@ -487,7 +488,7 @@ export function handleBuildRoad(
           setupState: {
             currentRound: 2,
             placementType: 'settlement',
-            settlementsNeedingRoads: new Map(),
+            settlementsNeedingRoads: {},
           },
         }
       } else {

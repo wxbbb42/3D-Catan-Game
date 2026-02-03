@@ -446,8 +446,8 @@ export default function GamePage() {
 
     return (
       <main className="h-screen w-screen overflow-hidden relative">
-        {/* 3D Board */}
-        <Board3D className="absolute inset-0" />
+        {/* 3D Board - fills the entire viewport */}
+        <Board3D className="h-full w-full" />
 
         {/* Game HUD overlay */}
         <GameHUD gameCode={gameCode} />

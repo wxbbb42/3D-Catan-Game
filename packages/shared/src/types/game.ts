@@ -31,8 +31,8 @@ export type TurnPhase =
 export interface SetupPhaseState {
   currentRound: 1 | 2
   placementType: 'settlement' | 'road'
-  // In round 2, track which settlements need road placement
-  settlementsNeedingRoads: Map<string, string> // playerId -> settlementVertexId
+  // Track which settlements need road placement (playerId -> settlementVertexId)
+  settlementsNeedingRoads: Record<string, string>
 }
 
 // Active trade proposal

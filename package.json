@@ -6,10 +6,12 @@
   "description": "3D Settlers of Catan multiplayer web game",
   "scripts": {
     "dev": "turbo run dev",
+    "dev:clean": "lsof -ti:3000 | xargs kill -9 2>/dev/null; lsof -ti:4000 | xargs kill -9 2>/dev/null; turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "kill-ports": "lsof -ti:3000 | xargs kill -9 2>/dev/null; lsof -ti:4000 | xargs kill -9 2>/dev/null; echo 'Ports 3000 and 4000 cleared'"
   },
   "devDependencies": {
     "turbo": "^2.3.3",

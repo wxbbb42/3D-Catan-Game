@@ -73,8 +73,8 @@ export interface ServerToClientEvents {
 
 export interface ClientToServerEvents {
   // Lobby
-  'lobby:create': (payload: { maxPlayers?: number }) => void
-  'lobby:join': (payload: { gameCode: string }) => void
+  'lobby:create': (payload: { maxPlayers?: number; username?: string }) => void
+  'lobby:join': (payload: { gameCode: string; username?: string }) => void
   'lobby:leave': () => void
   'lobby:ready': (payload: { isReady: boolean }) => void
   'lobby:set_color': (payload: { color: string }) => void

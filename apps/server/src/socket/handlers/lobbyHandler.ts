@@ -30,6 +30,7 @@ export function handleLobbyEvents(socket: GameSocket, playerId: string) {
   // Create a new lobby
   socket.on('lobby:create', (payload) => {
     const maxPlayers = payload?.maxPlayers ?? 4
+    const username = payload?.username ?? `Player ${playerId.slice(-4)}`
 
     // Generate unique code
     let code = generateGameCode()
@@ -45,7 +46,7 @@ export function handleLobbyEvents(socket: GameSocket, playerId: string) {
         {
           id: playerId,
           socketId: socket.id,
-          username: `Player ${playerId.slice(-4)}`,
+          username,
           color: 'red',
           isReady: false,
           isHost: true,
@@ -59,7 +60,7 @@ export function handleLobbyEvents(socket: GameSocket, playerId: string) {
     activeLobbies.set(code, lobby)
     socket.join(code)
 
-    console.log(`Lobby created: ${code} by ${playerId}`)
+    console.log(`Lobby created: ${code} by ${playerId} (${username})`)
 
     socket.emit('lobby:state', {
       lobby: {
@@ -85,7 +86,8 @@ export function handleLobbyEvents(socket: GameSocket, playerId: string) {
 
   // Join an existing lobby
   socket.on('lobby:join', (payload) => {
-    const { gameCode } = payload
+    const { gameCode, username: providedUsername } = payload
+    const username = providedUsername ?? `Player ${playerId.slice(-4)}`
     const lobby = activeLobbies.get(gameCode)
 
     if (!lobby) {
@@ -151,7 +153,7 @@ export function handleLobbyEvents(socket: GameSocket, playerId: string) {
     const newPlayer = {
       id: playerId,
       socketId: socket.id,
-      username: `Player ${playerId.slice(-4)}`,
+      username,
       color: getNextAvailableColor(lobby),
       isReady: false,
       isHost: false,
@@ -160,7 +162,7 @@ export function handleLobbyEvents(socket: GameSocket, playerId: string) {
     lobby.players.push(newPlayer)
     socket.join(gameCode)
 
-    console.log(`Player ${playerId} joined lobby: ${gameCode}`)
+    console.log(`Player ${playerId} (${username}) joined lobby: ${gameCode}`)
 
     // Notify all players in lobby
     io.to(gameCode).emit('lobby:player_joined', {
@@ -274,10 +276,21 @@ export function handleLobbyEvents(socket: GameSocket, playerId: string) {
 
   // Start game (host only)
   socket.on('lobby:start_game', () => {
+    console.log(`[lobby:start_game] Player ${playerId} attempting to start game`)
+    console.log(`[lobby:start_game] Active lobbies count: ${activeLobbies.size}`)
+
+    let foundLobby = false
     for (const [code, lobby] of activeLobbies) {
+      console.log(`[lobby:start_game] Checking lobby ${code}: hostId=${lobby.hostId}, players=${lobby.players.length}`)
+
       if (lobby.hostId === playerId) {
+        foundLobby = true
+        console.log(`[lobby:start_game] Found lobby ${code} for host ${playerId}`)
+        console.log(`[lobby:start_game] Players in lobby: ${JSON.stringify(lobby.players.map(p => ({ id: p.id, isReady: p.isReady, isHost: p.isHost })))}`)
+
         // Check minimum players
         if (lobby.players.length < 2) {
+          console.log(`[lobby:start_game] ERROR: Not enough players (${lobby.players.length})`)
           socket.emit('lobby:error', {
             code: 'NOT_ENOUGH_PLAYERS',
             message: 'Need at least 2 players to start.',
@@ -315,6 +328,10 @@ export function handleLobbyEvents(socket: GameSocket, playerId: string) {
 
         return
       }
+    }
+
+    if (!foundLobby) {
+      console.log(`[lobby:start_game] ERROR: No lobby found where ${playerId} is host`)
     }
   })
 }

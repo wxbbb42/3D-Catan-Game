@@ -7,9 +7,11 @@ import { useSocketContext } from '@/components/SocketProvider'
 
 export default function CreateGamePage() {
   const router = useRouter()
-  const { createLobby, lobby, error, isConnected, clearError } = useSocketContext()
+  const { createLobby, lobby, error, isConnected, clearError, isAuthenticated, userName } = useSocketContext()
   const [playerCount, setPlayerCount] = useState(4)
+  const [guestName, setGuestName] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
 
   // Navigate to lobby when it's created
   useEffect(() => {
@@ -23,10 +25,34 @@ export default function CreateGamePage() {
       return
     }
 
+    // If not authenticated, validate guest name
+    if (!isAuthenticated) {
+      const name = guestName.trim()
+      if (name.length < 2) {
+        setLocalError('Please enter a name (at least 2 characters)')
+        return
+      }
+      if (name.length > 20) {
+        setLocalError('Name must be 20 characters or less')
+        return
+      }
+    }
+
+    setLocalError(null)
     setIsCreating(true)
     clearError()
-    createLobby(playerCount)
+    // Pass guest name only if not authenticated
+    createLobby(playerCount, isAuthenticated ? undefined : guestName.trim())
   }
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setGuestName(e.target.value.slice(0, 20))
+    setLocalError(null)
+    clearError()
+  }
+
+  const displayError = localError || error
+  const canCreate = isConnected && (isAuthenticated || guestName.trim().length >= 2)
 
   return (
     <main className="min-h-screen bg-ui-bg">
@@ -70,15 +96,43 @@ export default function CreateGamePage() {
           )}
 
           {/* Error message */}
-          {error && (
+          {displayError && (
             <div className="glass-card p-4 mb-4 bg-red-50 border-red-200">
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm text-red-700">{displayError}</p>
             </div>
           )}
 
           {/* Game settings card */}
           <div className="glass-card p-6 mb-6">
             <h2 className="font-semibold text-ui-text mb-4">Game Settings</h2>
+
+            {/* Show logged-in user info OR guest name input */}
+            {isAuthenticated ? (
+              <div className="mb-6 p-3 bg-ui-accent/10 rounded-xl">
+                <p className="text-sm text-ui-text-muted mb-1">Playing as</p>
+                <p className="font-medium text-ui-text">{userName}</p>
+              </div>
+            ) : (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-ui-text-muted mb-2">
+                  Your Name (Guest)
+                </label>
+                <input
+                  type="text"
+                  value={guestName}
+                  onChange={handleNameChange}
+                  placeholder="Enter your name"
+                  className="input-field text-lg"
+                  autoFocus
+                />
+                <p className="mt-2 text-xs text-ui-text-muted">
+                  <Link href="/auth/signin" className="text-ui-accent hover:underline">
+                    Sign in
+                  </Link>
+                  {' '}to save your progress and stats
+                </p>
+              </div>
+            )}
 
             {/* Player count selector */}
             <div className="mb-6">
@@ -127,7 +181,7 @@ export default function CreateGamePage() {
           {/* Create button */}
           <button
             onClick={handleCreate}
-            disabled={isCreating || !isConnected}
+            disabled={isCreating || !canCreate}
             className="w-full py-4 px-6 bg-gradient-to-r from-ui-accent to-ocean-dark text-white font-semibold text-lg rounded-2xl shadow-soft-md transition-all hover:scale-[1.02] hover:shadow-soft-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {isCreating ? (

@@ -293,42 +293,57 @@ export function RollForOrderOverlay({
     const [isRolling, setIsRolling] = useState(false)
     const [diceValues, setDiceValues] = useState<[number, number]>([1, 1])
     const [showResult, setShowResult] = useState(false)
+    const [waitingForServer, setWaitingForServer] = useState(false)
+    const previousRollsRef = useRef<Record<string, number>>({})
 
-    // Debug: log the state
-    console.log('[RollForOrderOverlay] isMyTurn:', isMyTurn, 'isRolling:', isRolling, 'showResult:', showResult)
+    // Watch for new roll results from server
+    useEffect(() => {
+        // Check if current roller just got a new roll value
+        const currentRoll = rolls[currentRoller.id]
+        const previousRoll = previousRollsRef.current[currentRoller.id]
+
+        if (currentRoll !== undefined && currentRoll !== previousRoll) {
+            // New roll came in from server - calculate dice values that sum to this
+            // Use a simple split (doesn't need to be exact dice, just visual)
+            const total = currentRoll
+            const die1 = Math.min(6, Math.max(1, Math.floor(total / 2)))
+            const die2 = Math.min(6, Math.max(1, total - die1))
+            setDiceValues([die1, die2])
+
+            if (waitingForServer) {
+                // We were waiting for this - start the animation
+                setWaitingForServer(false)
+                setIsRolling(true)
+            }
+        }
+
+        previousRollsRef.current = { ...rolls }
+    }, [rolls, currentRoller.id, waitingForServer])
 
     const handleRoll = () => {
-        if (!isMyTurn || isRolling) return
+        if (!isMyTurn || isRolling || waitingForServer) return
 
-        setIsRolling(true)
+        // Send roll request to server first
+        setWaitingForServer(true)
         setShowResult(false)
-
-        // Generate random dice values
-        const die1 = Math.floor(Math.random() * 6) + 1
-        const die2 = Math.floor(Math.random() * 6) + 1
-        setDiceValues([die1, die2])
+        onRoll()
     }
 
     // Keyboard shortcut: Space to roll
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.code === 'Space' && isMyTurn && !isRolling && !showResult) {
+            if (e.code === 'Space' && isMyTurn && !isRolling && !showResult && !waitingForServer) {
                 e.preventDefault()
                 handleRoll()
             }
         }
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [isMyTurn, isRolling, showResult])
+    }, [isMyTurn, isRolling, showResult, waitingForServer])
 
     const handleRollComplete = () => {
         setIsRolling(false)
         setShowResult(true)
-
-        // Notify parent after showing result briefly
-        setTimeout(() => {
-            onRoll()
-        }, 1500)
     }
 
     const playerColorClass = (color: string) => {
@@ -389,13 +404,17 @@ export function RollForOrderOverlay({
             {!isRolling && !showResult && (
                 <button
                     onClick={handleRoll}
-                    disabled={!isMyTurn}
-                    className={`px-8 py-4 text-white text-xl font-bold rounded-xl shadow-lg transition-all ${isMyTurn
+                    disabled={!isMyTurn || waitingForServer}
+                    className={`px-8 py-4 text-white text-xl font-bold rounded-xl shadow-lg transition-all ${isMyTurn && !waitingForServer
                             ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:scale-105 active:scale-95 cursor-pointer animate-pulse'
                             : 'bg-gray-500/50 cursor-not-allowed'
                         }`}
                 >
-                    {isMyTurn ? '🎲 Roll Dice! (or press Space)' : `Waiting for ${currentRoller.username}...`}
+                    {waitingForServer
+                        ? '🎲 Rolling...'
+                        : isMyTurn
+                            ? '🎲 Roll Dice! (or press Space)'
+                            : `Waiting for ${currentRoller.username}...`}
                 </button>
             )}
 

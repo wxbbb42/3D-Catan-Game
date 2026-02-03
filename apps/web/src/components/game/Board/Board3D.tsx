@@ -153,8 +153,8 @@ export interface Board3DProps {
 
 export function Board3D({ className }: Board3DProps) {
   return (
-    <div className={`relative ${className ?? ''}`}>
-      <Canvas shadows>
+    <div className={`w-full h-full ${className ?? ''}`}>
+      <Canvas shadows className="w-full h-full block">
         {/* Soft pastel background for toon style */}
         <color attach="background" args={['#87CEEB']} />
 
@@ -169,11 +169,11 @@ export function Board3D({ className }: Board3DProps) {
           rayleigh={0.5}
         />
 
-        {/* Camera */}
+        {/* Camera - positioned for good board overview */}
         <PerspectiveCamera
           makeDefault
-          position={[0, 14, 12]}
-          fov={45}
+          position={[0, 10, 8]}
+          fov={50}
         />
 
         {/* Controls - orbit around the board */}
@@ -181,10 +181,10 @@ export function Board3D({ className }: Board3DProps) {
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
-          minDistance={10}
-          maxDistance={30}
+          minDistance={6}
+          maxDistance={20}
           minPolarAngle={Math.PI / 6}
-          maxPolarAngle={Math.PI / 2.3}
+          maxPolarAngle={Math.PI / 2.5}
           target={[0, 0, 0]}
           enableDamping
           dampingFactor={0.05}

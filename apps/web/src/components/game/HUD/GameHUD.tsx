@@ -75,9 +75,23 @@ export function GameHUD({ gameCode }: GameHUDProps) {
         <PlayerList />
       </div>
 
-      {/* Right side - Action buttons */}
+      {/* Right side - Action buttons + Setup hint */}
       <div className="absolute right-4 top-24 pointer-events-auto">
         <ActionButtons />
+
+        {/* Setup phase hint - compact, below action buttons */}
+        {isMyTurn && isSetupPhase && (
+          <div className="mt-3 glass-card px-4 py-3 text-sm max-w-[200px]">
+            <div className="font-semibold text-ui-text mb-1">
+              {game?.setupState?.placementType === 'settlement' ? '🏠 Place Settlement' : '🛤️ Place Road'}
+            </div>
+            <div className="text-ui-text-muted text-xs">
+              {game?.setupState?.placementType === 'settlement'
+                ? 'Click a corner on the board'
+                : 'Click an edge next to your settlement'}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bottom - Resource panel */}
@@ -87,29 +101,12 @@ export function GameHUD({ gameCode }: GameHUDProps) {
         </div>
       </div>
 
-      {/* Your turn overlay */}
+      {/* Your turn overlay - only for dice roll, not setup */}
       {isMyTurn && game?.turnPhase === 'pre_roll' && !isSetupPhase && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="glass-card px-8 py-6 text-center animate-pulse-soft pointer-events-auto">
             <h2 className="text-2xl font-bold text-ui-text mb-2">Your Turn!</h2>
             <p className="text-ui-text-muted">Click the dice to roll</p>
-          </div>
-        </div>
-      )}
-
-      {/* Setup phase instructions */}
-      {isMyTurn && isSetupPhase && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="glass-card px-8 py-6 text-center animate-pulse-soft pointer-events-auto max-w-md">
-            <h2 className="text-2xl font-bold text-ui-text mb-2">
-              {gamePhase === 'setup_first' ? 'Setup Round 1' : 'Setup Round 2'}
-            </h2>
-            <p className="text-ui-text-muted mb-3">
-              Place a settlement on a vertex (corner), then place a road on an adjacent edge.
-            </p>
-            <div className="text-sm text-ui-accent">
-              Click "Settlement" in the Build panel, then click a vertex on the board.
-            </div>
           </div>
         </div>
       )}

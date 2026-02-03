@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useGameStore, useMyPlayer, useIsMyTurn, useTurnPhase } from '@/stores/gameStore'
 import type { DevCard, DevCardType } from '@catan/shared'
 
@@ -200,7 +200,7 @@ function MonopolyDialog({ onSelect, onCancel }: MonopolyDialogProps) {
 
 export function DevCardPanel() {
   const showPanel = useGameStore((state) => state.ui.showDevCardPanel)
-  const actions = useGameStore((state) => state.actions)
+  const { actions } = useGameStore()
   const myPlayer = useMyPlayer()
   const isMyTurn = useIsMyTurn()
   const turnPhase = useTurnPhase()
@@ -209,6 +209,24 @@ export function DevCardPanel() {
   const [activeDialog, setActiveDialog] = useState<'year_of_plenty' | 'monopoly' | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_selectedCard, setSelectedCard] = useState<DevCard | null>(null)
+
+  const handleClose = useCallback(() => {
+    actions.toggleDevCardPanel()
+  }, [actions])
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!showPanel) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showPanel, handleClose])
 
   if (!showPanel) {
     return null
@@ -274,8 +292,14 @@ export function DevCardPanel() {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-        <div className="glass-card w-full max-w-lg max-h-[80vh] overflow-y-auto p-4">
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+        onClick={handleClose}
+      >
+        <div
+          className="glass-card w-full max-w-lg max-h-[80vh] overflow-y-auto p-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -285,10 +309,10 @@ export function DevCardPanel() {
               </p>
             </div>
             <button
-              onClick={() => actions.toggleDevCardPanel()}
-              className="text-ui-text-muted hover:text-ui-text"
+              onClick={handleClose}
+              className="w-8 h-8 flex items-center justify-center text-ui-text-muted hover:text-ui-text hover:bg-gray-100 rounded-lg transition-colors text-xl"
             >
-              ✕
+              ×
             </button>
           </div>
 
