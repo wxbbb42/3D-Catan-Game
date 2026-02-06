@@ -1,0 +1,45 @@
+# Render Blueprint - Infrastructure as Code
+# Deploy: Connect your GitHub repo at https://dashboard.render.com
+
+services:
+  # Game Server (Express + Socket.IO)
+  - type: web
+    name: catan-server
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: apps/server
+    buildCommand: cd ../.. && pnpm install && pnpm --filter @catan/shared build && cd apps/server && pnpm run db:generate && pnpm run build
+    startCommand: node dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: catan-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: catan-redis
+          type: redis
+          property: connectionString
+      - key: CORS_ORIGIN
+        sync: false  # Set this manually to your frontend URL
+
+  # Redis for session/game state
+  - type: redis
+    name: catan-redis
+    region: oregon
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  # PostgreSQL database
+  - name: catan-db
+    region: oregon
+    plan: free
+    databaseName: catan
+    user: catan_user
